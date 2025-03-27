@@ -12,16 +12,16 @@ class Quote:
     tags: list[str]
 
 
-
 BASE_URL = "https://quotes.toscrape.com/"
 
-def get_soup(url):
+
+def get_soup(url: str) -> BeautifulSoup:
     response = requests.get(url)
     response.raise_for_status()
     return BeautifulSoup(response.text, "html.parser")
 
 
-def parse_quotes_from_page(soup):
+def parse_quotes_from_page(soup: BeautifulSoup) -> list[Quote]:
     quotes_data = []
     quote_elements = soup.find_all("div", class_="quote")
     for quote in quote_elements:
@@ -32,13 +32,13 @@ def parse_quotes_from_page(soup):
     return quotes_data
 
 
-def get_author_bio(author_url):
+def get_author_bio(author_url: str) -> str:
     soup = get_soup(author_url)
     bio_div = soup.find("div", class_="author-description")
     return bio_div.get_text(strip=True) if bio_div else ""
 
 
-def scrape_all_quotes():
+def scrape_all_quotes() -> list[Quote]:
     quotes = []
     authors_cache = {}
     page_url = BASE_URL
@@ -51,7 +51,12 @@ def scrape_all_quotes():
             quotes.append(quote)
             author = quote.author
             if author not in authors_cache:
-                author_page_relative = soup.find("a", href=True, text=author)["href"]
+                author_page_relative = soup.find(
+                    "a",
+                    href=True,
+                    text=author
+                )["href"]
+
                 author_page_url = urljoin(BASE_URL, author_page_relative)
                 bio = get_author_bio(author_page_url)
                 authors_cache[author] = bio
@@ -66,7 +71,7 @@ def scrape_all_quotes():
     return quotes, authors_cache
 
 
-def write_quotes_to_csv(quotes, output_csv_path):
+def write_quotes_to_csv(quotes: list[Quote], output_csv_path: str) -> None:
     fieldnames = ["text", "author", "tags"]
     with open(output_csv_path, "w", newline="", encoding="utf-8") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -79,7 +84,7 @@ def write_quotes_to_csv(quotes, output_csv_path):
             })
 
 
-def write_authors_to_csv(authors, output_csv_path):
+def write_authors_to_csv(authors: dict, output_csv_path: str) -> None:
     authors_csv_path = output_csv_path.rsplit(".", 1)[0] + "_authors.csv"
     fieldnames = ["author", "biography"]
     with open(authors_csv_path, "w", newline="", encoding="utf-8") as csvfile:
@@ -90,6 +95,7 @@ def write_authors_to_csv(authors, output_csv_path):
                 "author": author,
                 "biography": bio
             })
+
 
 def main(output_csv_path: str) -> None:
     quotes, authors = scrape_all_quotes()
